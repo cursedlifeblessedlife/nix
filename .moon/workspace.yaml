@@ -1,0 +1,19 @@
+$schema: "./cache/schemas/workspace.json"
+
+projects:
+  - "crates/*"
+
+constraints:
+  enforceLayerRelationships: false
+
+pipeline:
+  logRunningCommand: true
+
+vcs:
+  defaultBranch: "master"
+  manager: "git"
+  provider: "github"
+
+experiments:
+  fasterGlobWalk: true
+  gitV2: true

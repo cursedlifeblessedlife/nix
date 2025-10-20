@@ -1,0 +1,14 @@
+proto:
+  version: "0.53.0"
+
+unstable_rust:
+  version: "1.90.0"
+  binInstallVersion: "1.15.0"
+  syncToolchainConfig: true
+  addMsrvConstraint: true
+  components:
+    - "rustfmt"
+    - "rust-analyzer"
+    - "clippy"
+  targets:
+    - "wasm32-wasip1"
