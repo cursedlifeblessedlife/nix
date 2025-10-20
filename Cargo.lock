@@ -354,6 +354,8 @@ version = "0.1.0"
 dependencies = [
  "extism-pdk",
  "proto_pdk",
+ "schematic",
+ "serde",
 ]
 
 [[package]]

@@ -11,4 +11,5 @@ unstable_rust:
     - "rust-analyzer"
     - "clippy"
   targets:
+    - "wasm32-unknown-unknown"
     - "wasm32-wasip1"

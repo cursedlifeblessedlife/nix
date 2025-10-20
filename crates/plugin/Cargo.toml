@@ -1,0 +1,26 @@
+[package]
+name = "nix_tool"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ['cdylib']
+
+[dependencies]
+extism-pdk = "1.4.1"
+proto_pdk = "0.32.2"
+schematic = { version = "*", default-features = false, features = ["schema"] }
+serde = "1.0.228"
+
+[features]
+default = ["wasm"]
+wasm = []
+
+[profile.release]
+codegen-units = 1
+debug = false
+lto = true
+opt-level = "s"
+panic = "abort"
