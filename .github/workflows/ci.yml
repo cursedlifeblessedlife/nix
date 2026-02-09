@@ -20,8 +20,8 @@ jobs:
       - name: Cache
         uses: Swatinem/rust-cache@v2
 
-      - name: Test
-        run: cargo test -p nix_tool
-
       - name: Build
         run: cargo build -p nix_tool --release --target wasm32-wasip1
+
+      - name: Test
+        run: cargo test -p nix_tool
