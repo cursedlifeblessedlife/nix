@@ -38,7 +38,10 @@ async fn builds_expected_download_output() {
     );
     assert_eq!(
         output.checksum_url,
-        Some("https://releases.nixos.org/nix/nix-2.24.8/nix-2.24.8-x86_64-darwin.tar.xz.sha256".into())
+        Some(
+            "https://releases.nixos.org/nix/nix-2.24.8/nix-2.24.8-x86_64-darwin.tar.xz.sha256"
+                .into()
+        )
     );
 }
 

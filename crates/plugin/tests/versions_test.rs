@@ -32,10 +32,8 @@ async fn filters_non_semver_tags() {
         })
         .await;
 
-    assert!(
-        !output.versions.iter().any(|version| match version {
-            VersionSpec::Canary | VersionSpec::Alias(_) => true,
-            VersionSpec::Calendar(_) | VersionSpec::Semantic(_) => false,
-        })
-    );
+    assert!(!output.versions.iter().any(|version| match version {
+        VersionSpec::Canary | VersionSpec::Alias(_) => true,
+        VersionSpec::Calendar(_) | VersionSpec::Semantic(_) => false,
+    }));
 }
