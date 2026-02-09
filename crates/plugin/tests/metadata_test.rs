@@ -7,7 +7,11 @@ async fn registers_expected_tool_metadata() {
     let sandbox = create_empty_proto_sandbox();
     let plugin = sandbox.create_plugin("nix").await;
 
-    let output = plugin.register_tool(RegisterToolInput::default()).await;
+    let output = plugin
+        .register_tool(RegisterToolInput {
+            id: plugin.tool.get_id().clone(),
+        })
+        .await;
 
     assert_eq!(output.name, "Nix");
     assert_eq!(output.type_of, PluginType::DependencyManager);

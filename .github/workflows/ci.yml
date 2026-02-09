@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [master]
+
+jobs:
+  ci:
+    name: ci
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip1
+
+      - name: Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build
+        run: cargo build -p nix_tool --release --target wasm32-wasip1
+
+      - name: Test
+        run: cargo test -p nix_tool

@@ -22,10 +22,3 @@ serde = "1.0.228"
 [features]
 default = ["wasm"]
 wasm = []
-
-[profile.release]
-codegen-units = 1
-debug = false
-lto = true
-opt-level = "s"
-panic = "abort"

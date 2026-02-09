@@ -1,0 +1,35 @@
+name: CD
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build
+        id: build
+        uses: moonrepo/build-wasm-plugin@v0
+
+      - name: Publish
+        if: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: builds/*
+          artifactErrorsFailBuild: true
+          body: ${{ steps.build.outputs.changelog-entry }}
+          prerelease: ${{ steps.build.outputs.prerelease == 'true' }}
+          skipIfReleaseExists: true
