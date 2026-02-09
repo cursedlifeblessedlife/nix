@@ -6,17 +6,79 @@ use schematic::SchemaBuilder;
 
 use crate::{DistTag, PluginConfig};
 
-#[host_fn]
-extern "ExtismHost" {
-    fn exec_command(input: Json<ExecCommandInput>) -> Json<ExecCommandInput>;
+static TOOL_NAME: &str = "Nix";
+static EXE_NAME: &str = "nix";
+
+pub fn parse_dist_tag_version(tag_name: &str) -> Option<VersionSpec> {
+    let value = tag_name.trim();
+    let value = value.strip_prefix('v').unwrap_or(value);
+
+    if !value
+        .chars()
+        .next()
+        .is_some_and(|char| char.is_ascii_digit())
+    {
+        return None;
+    }
+
+    VersionSpec::parse(value).ok()
 }
 
-static NAME: &str = "Nix";
+fn to_arch_slug(arch: HostArch) -> String {
+    match arch {
+        HostArch::X64 => "x86_64".to_string(),
+        HostArch::Arm64 => "aarch64".to_string(),
+        HostArch::Arm => "armv7l".to_string(),
+        _ => arch.to_string(),
+    }
+}
+
+fn to_os_slug(os: HostOS) -> Result<String, PluginError> {
+    match os {
+        HostOS::Linux => Ok("linux".to_string()),
+        HostOS::MacOS => Ok("darwin".to_string()),
+        other => Err(PluginError::UnsupportedOS {
+            tool: TOOL_NAME.to_string(),
+            os: other.to_string(),
+        }),
+    }
+}
+
+fn create_download_prebuilt_output(
+    config: &PluginConfig,
+    version: &VersionSpec,
+    arch: HostArch,
+    os: HostOS,
+) -> Result<DownloadPrebuiltOutput, PluginError> {
+    let arch_slug = to_arch_slug(arch);
+    let os_slug = to_os_slug(os)?;
+    let version = version.to_string();
+    let prefix = format!("nix-{version}/nix-{version}-{arch_slug}-{os_slug}");
+    let download_url = config
+        .dist_url
+        .replace("{version}", &version)
+        .replace("{arch}", &arch_slug)
+        .replace("{os}", &os_slug);
+    let filename = format!("nix-{version}-{arch_slug}-{os_slug}.tar.xz");
+    let checksum_url = format!("{}.sha256", download_url);
+
+    Ok(DownloadPrebuiltOutput {
+        archive_prefix: Some(prefix),
+        download_url,
+        download_name: Some(filename),
+        checksum_url: Some(checksum_url),
+        ..DownloadPrebuiltOutput::default()
+    })
+}
+
+fn locate_nix_executables() -> [(String, ExecutableConfig); 1] {
+    [(EXE_NAME.into(), ExecutableConfig::new_primary("bin/nix"))]
+}
 
 #[plugin_fn]
 pub fn register_tool(Json(_): Json<RegisterToolInput>) -> FnResult<Json<RegisterToolOutput>> {
     Ok(Json(RegisterToolOutput {
-        name: NAME.into(),
+        name: TOOL_NAME.into(),
         minimum_proto_version: Some(Version::new(0, 46, 0)),
         type_of: PluginType::DependencyManager,
         default_install_strategy: InstallStrategy::DownloadPrebuilt,
@@ -40,7 +102,7 @@ pub fn download_prebuilt(
     let config = get_tool_config::<PluginConfig>()?;
 
     check_supported_os_and_arch(
-        NAME,
+        TOOL_NAME,
         &env,
         permutations! [
             HostOS::Linux => [HostArch::X64, HostArch::Arm64, HostArch::Arm],
@@ -48,44 +110,10 @@ pub fn download_prebuilt(
         ],
     )?;
 
-    let version = input.context.version;
-    let arch = env.arch;
-    let os = env.os;
+    let output =
+        create_download_prebuilt_output(&config, &input.context.version, env.arch, env.os)?;
 
-    let arch_slug = match arch {
-        HostArch::X64 => "x86_64".to_string(),
-        HostArch::Arm64 => "aarch64".to_string(),
-        HostArch::Arm => "armv7l".to_string(),
-        _ => arch.to_string(),
-    };
-    let os_slug = match os {
-        HostOS::Linux => "linux".to_string(),
-        HostOS::MacOS => "darwin".to_string(),
-        other => {
-            return Err(PluginError::UnsupportedOS {
-                tool: NAME.to_string(),
-                os: other.to_string(),
-            }
-            .into());
-        }
-    };
-
-    let prefix = format!("nix-{version}/nix-{version}-{arch_slug}-{os_slug}");
-    let download_url = config
-        .dist_url
-        .replace("{version}", version.to_string().as_str())
-        .replace("{arch}", &arch_slug)
-        .replace("{os}", &os_slug);
-    let filename = format!("{}.tar.xz", prefix);
-    let checksum_url = format!("{}.sha256", download_url);
-
-    Ok(Json(DownloadPrebuiltOutput {
-        archive_prefix: Some(prefix),
-        download_url: download_url,
-        download_name: Some(filename),
-        checksum_url: Some(checksum_url),
-        ..DownloadPrebuiltOutput::default()
-    }))
+    Ok(Json(output))
 }
 
 #[plugin_fn]
@@ -93,10 +121,7 @@ pub fn locate_executables(
     Json(_): Json<LocateExecutablesInput>,
 ) -> FnResult<Json<LocateExecutablesOutput>> {
     Ok(Json(LocateExecutablesOutput {
-        exes: HashMap::from_iter([(
-            NAME.into(),
-            ExecutableConfig::new_primary("install-multi-user"),
-        )]),
+        exes: HashMap::from_iter(locate_nix_executables()),
         ..LocateExecutablesOutput::default()
     }))
 }
@@ -122,11 +147,7 @@ pub fn load_versions(Json(_): Json<LoadVersionsInput>) -> FnResult<Json<LoadVers
 
     let mut versions: Vec<VersionSpec> = tags
         .into_iter()
-        .filter_map(|t| {
-            let s = t.name.trim();
-            let s = s.strip_prefix('v').unwrap_or(s);
-            VersionSpec::parse(s).ok()
-        })
+        .filter_map(|t| parse_dist_tag_version(&t.name))
         .collect();
 
     versions.sort();
