@@ -2483,7 +2483,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "nix_tool"
+name = "nix"
 version = "0.1.0"
 dependencies = [
  "extism-pdk",

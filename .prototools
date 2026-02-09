@@ -2,4 +2,4 @@ moon = "1.41.5"
 rust = "1.90.0"
 
 [plugins.tools]
-nix = "file://./target/wasm32-wasip1/debug/nix_tool.wasm"
+nix = "file://./target/wasm32-wasip1/debug/nix.wasm"
